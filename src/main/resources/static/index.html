@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 50px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+        }
+        input, button, select {
+            margin: 5px;
+            padding: 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #fff;
+            border: 1px solid #ddd;
+        }
+        .progress-container {
+            background-color: #ccc;
+            width: 100%;
+            height: 20px;
+            margin-top: 10px;
+        }
+        .progress-bar {
+            background-color: #4CAF50;
+            height: 20px;
+            width: 0;
+        }
+    </style>
+</head>
+<body>
+<h1>To-Do List</h1>
+
+<!-- Task Input and Add Button -->
+<input type="text" id="taskInput" placeholder="Enter a new task">
+<input type="text" id="categoryInput" placeholder="Category (e.g., Work)">
+<button onclick="addTask()">Add Task</button>
+
+<!-- Category Filter Dropdown -->
+<select id="filter" onchange="filterTasks()">
+    <option value="all">All Categories</option>
+    <option value="work">Work</option>
+    <option value="personal">Personal</option>
+    <option value="fitness">Fitness</option>
+</select>
+
+<!-- Task List -->
+<ul id="taskList"></ul>
+
+<!-- Progress Bar -->
+<div class="progress-container">
+    <div id="progressBar" class="progress-bar"></div>
+</div>
+
+<!-- Streak Counter -->
+<p id="streakCounter">Current Streak: 0 days</p>
+
+<script>
+    const apiUrl = '/api/tasks';
+    let tasks = []; // Store tasks globally for filtering
+
+    // Fetch tasks from backend
+    async function fetchTasks() {
+        const response = await fetch(apiUrl);
+        tasks = await response.json(); // Store tasks globally
+        displayTasks(tasks);
+        updateProgress(tasks);
+        updateStreak(tasks);
+    }
+
+    // Display tasks in the list
+    function displayTasks(taskList) {
+        const taskListElement = document.getElementById('taskList');
+        taskListElement.innerHTML = '';
+        taskList.forEach(task => {
+            const li = document.createElement('li');
+            li.textContent = `${task.description} - Category: ${task.category} - ${task.completed ? 'Completed' : 'Pending'}`;
+            li.addEventListener('click', () => toggleTask(task));
+            taskListElement.appendChild(li);
+        });
+    }
+
+    // Add a new task
+    async function addTask() {
+        const taskInput = document.getElementById('taskInput');
+        const categoryInput = document.getElementById('categoryInput');
+
+        const task = {
+            description: taskInput.value,
+            category: categoryInput.value,
+            completed: false,
+        };
+
+        await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(task),
+        });
+
+        taskInput.value = '';
+        categoryInput.value = '';
+        fetchTasks();
+    }
+
+    // Toggle task completion
+    async function toggleTask(task) {
+        task.completed = !task.completed;
+        task.completedDate = task.completed ? new Date().toISOString().split('T')[0] : null;
+        await fetch(`${apiUrl}/${task.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(task),
+        });
+        fetchTasks();
+    }
+
+    // Filter tasks by category
+    function filterTasks() {
+        const filter = document.getElementById('filter').value;
+        const filteredTasks = tasks.filter(task =>
+            filter === 'all' || task.category.toLowerCase() === filter
+        );
+        displayTasks(filteredTasks);
+    }
+
+    // Update progress bar
+    function updateProgress(tasks) {
+        const completedTasks = tasks.filter(task => task.completed).length;
+        const progress = tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0;
+        document.getElementById('progressBar').style.width = progress + '%';
+    }
+
+    // Update streak counter
+    function updateStreak(tasks) {
+        const today = new Date().toISOString().split('T')[0]; // Current date in YYYY-MM-DD format
+        const completedToday = tasks.some(task => task.completed && task.completedDate === today);
+
+        let streak = parseInt(localStorage.getItem('streak')) || 0;
+        let lastCompletedDate = localStorage.getItem('lastCompletedDate');
+
+        if (completedToday && lastCompletedDate !== today) {
+            streak++;
+            localStorage.setItem('streak', streak);
+            localStorage.setItem('lastCompletedDate', today);
+        }
+
+        document.getElementById('streakCounter').textContent = `Current Streak: ${streak} days`;
+    }
+
+    // Fetch tasks on page load
+    fetchTasks();
+</script>
+</body>
+</html>
