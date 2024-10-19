@@ -8,3 +8,8 @@ Explore RESTful API development with Spring Boot.
 Apply frontend and backend integration.
 Provide a practical example of using JavaScript for DOM manipulation and visual feedback.
 With clear progress tracking and task filtering capabilities, the app is suitable for daily use and can be extended with more features like user authentication or cloud deployment.
+
+
+<img width="1512" alt="Screenshot 2024-10-19 at 6 14 18 PM" src="https://github.com/user-attachments/assets/ad293775-f451-483a-bb7f-d88808fd50f8">
+
+
